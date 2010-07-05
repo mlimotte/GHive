@@ -1,0 +1,119 @@
+Version 0.1
+2010-07-02
+Marc Limotte
+
+GHive is a quick groovy wrapper around Hive.  It provides a few basic functionalities.  It can
+be particularly useful if you're using Amazon EMR and want a way to run your hive scripts locally.
+
+One of the primary use cases I wanted to support was the ability to unit test Amazon EMR hive scripts.  I have some
+extensions to this code to accomplish this.  I will be committing those here, soon.
+
+
+FEATURES
+--------
+
+Variable Interpolation: The script can include variables of the form ${name} which are replaced
+by values from the vars Map.  This is identical to the Amazon EMR extended functionality, ideally the feature
+would be built directly into Hive itself, so that it could be used with non-EMR implementations.
+
+Comments: If you have a long script, it is useful to include comments, just like you would in a long SQL script. With
+GHive, you can include comments with a -- at the beginning of a line or whitespace followed by --).  You can not put
+a comment at the end of a line.  That's because I didn't want to interfere with scripts that might include a string
+with -- in them.  For example:
+   ...
+   WHERE my_field = '--'
+   ...
+Would be a problem. It would be nice ot fix this with a smarter regex or parser, but it wasn't worth teh trouble for me.
+
+Dump processed script to a file: It can be useful to save a copy of the script, after the GHive pre-processor has
+worked on it.  A simple use case is a complicated hive job that runs once a day.  If you dump the script to a log
+directory, you can refer to it later if there are errors and even run the individual commands interactively through
+the Hive shell.  There is a simple GHive API call to do this (see below).
+
+Multiple commands through JDBC: The commands are sent through the Hive JDBC driver. JDBC only acepts one command at
+a time, so the script is separated into multiple commands and fed to JDBC serially.  Commands are separated by ";" or
+EOF.
+
+
+
+BUILDING
+--------
+
+1. Install Apache Ant (I used version 1.7.1)
+2. Adjust any paths in build.xml
+3. Run:
+
+    ant jar
+
+4. The resulting jar will be at build/ghive.jar
+
+
+
+USAGE
+-----
+
+
+Example 1 (simple script)
+
+Create a hive script with variables and comments. For example, create a file "hive/simple.ghive":
+
+  -- My simple hive script
+  -- For simplicity, I'm assuming the tables already exist
+
+  ADD JAR ${HIVE_LIB}/hive_contrib.jar;
+
+  ALTER TABLE user_ex ADD PARTITION (dt='${DATE}');
+
+  INSERT OVERWRITE TABLE tmp
+  SELECT username,
+         -- first_name,
+         -- last_name,
+         email,
+         phone
+  FROM   user_ex;
+
+In your Groovy Code
+
+    GHive ghive = GHive.instance()
+    // vars are a Map<String,String>, the keys are case-sensitive. Remember, in Groovy, symbols used as keys in a map
+    // don't need to be quoted.  I.e. [ FOO : 'foo' ] is equivalent to [ 'FOO' : foo ]
+  	def vars = [
+  			HIVE_LIB : '/usr/lib/hive/lib',
+  			DATE : '2010-07-02',
+  			]
+    // The use od dumpScript is optional, and just writes a copy of the GHive processed hive commands to disk.
+    // The resulting file could be fed directly to the hive shell via the -f flag.
+  	ghive.dumpScript("hive/simple.ghive",vars,"output/simple.hive")
+  	ghive.executeScript("hive/simple.ghive",vars)
+
+
+Example 2
+
+Run some query on each for a list of names and process the result in hive.  For example, a script "hive/getdata.ghive":
+
+    -- A user may be in multiple groups
+    SELECT username, group
+    FROM   user_group
+    WHERE  username = ${USERNAME}
+
+And groovy code:
+
+   GHive ghive = GHive.instance()
+   def usernames = [ 'gilbert', 'brook', 'xtreme' ]
+   usernames.each { username ->
+     ghive.eachRow("hive/getdata.ghive", [ USERNAME : username ]) { rs ->
+       def group = rs.getString(2) // Like standard java sql, a 1 based index number
+       println "$username is a member of $group"
+     }
+   }
+
+
+THOUGHTS ON THE DSL
+-------------------
+
+This is a simple, external DSL. Conceivably, I could use a full parser instead of the simple REGEXs and expand this
+into a full DSL with conditionals and loops and so on.  But, as Example 2 shows, you can just use groovy to do this.
+
+If that's a typical use case, it might make more sense to create an internal DSL.
+
+

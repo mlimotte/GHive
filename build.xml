@@ -1,0 +1,125 @@
+<?xml version="1.0"?>
+
+<!--
+  GHive
+  Marc Limotte
+  2010/07/02
+-->
+
+<project name="ghive" default="build" basedir=".">
+
+
+	<!-- Locations -->
+
+    <property name="src.dir" location="${basedir}/src" />
+    <property name="src.test" location="${basedir}/test" />
+
+	<property name="reports.test" location="${basedir}/build/reports" />
+	<property name="build.dir" location="${basedir}/build/" />
+	<property name="build.classes" location="${build.dir}/classes" />
+    <property name="build.test" location="${build.dir}/test" />
+    <property name="build.doc" location="${build.dir}/doc" />
+
+	<!-- Libraries -->
+
+	<property name="junit.lib" value="/lib/junit.jar" />
+
+
+    <!-- at runtime, remmeber to include Hadoop and Hive libs and conf directories.
+
+    For example:
+
+        <property name="hadoop.conf" value="/usr/local/hadoop/conf" />
+        <property name="hadoop.lib.dir" value="/usr/local/hadoop/lib" />
+        <property name="hadoop.core" value="/usr/local/hadoop/hadoop-0.20.2+228-core.jar" />
+        <property name="hive.conf" value="/usr/local/hive/conf" />
+        <property name="hive.lib.dir" value="/usr/local/hive/lib" />
+
+		<pathelement location="${hadoop.core}" />
+		<pathelement location="${hadoop.conf}" />
+		<fileset dir="${hadoop.lib.dir}" includes="*.jar" />
+        <pathelement location="${hive.conf}" />
+        <fileset dir="${hive.lib.dir}" includes="*.jar" />
+    -->
+
+
+	<!-- classpath -->
+
+	<path id="project.class.path">
+		<pathelement location="${build.classes}" />
+        <pathelement location="/usr/local/groovy/embeddable/groovy-all-1.7.2.jar" />
+		<pathelement location="${build.test}" />
+		<pathelement location="${junit.lib}" />
+	</path>
+
+	<!-- task defs -->
+
+	<taskdef name="groovyc" classname="org.codehaus.groovy.ant.Groovyc"
+		classpathref="project.class.path" />
+
+	<!-- Targets -->
+
+	<target name="clean">
+		<echo message="cleaning..." />
+		<delete dir="${build.dir}" />
+	</target>
+
+	<target name="doc">
+        <mkdir dir="${build.doc}" />
+
+        <javadoc
+               classpathref     = "project.class.path"
+               destdir          = "${build.doc}"
+               packagenames     = "ghive.*"
+               sourcepath       = "${src.dir}"
+               windowTitle      = "GHive">
+        </javadoc>
+    </target>
+
+    <target name="build">
+
+		<echo message="building..." />
+		<mkdir dir="${build.classes}" />
+        <mkdir dir="${build.test}" />
+
+		<groovyc srcdir="${src.dir}" destdir="${build.classes}">
+			<classpath>
+				<path refid="project.class.path" />
+			</classpath>
+			<javac source="1.6" target="1.6" debug="true" />
+		</groovyc>
+
+		<groovyc srcdir="${src.test}" destdir="${build.test}">
+			<classpath>
+				<path refid="project.class.path" />
+			</classpath>
+			<javac source="1.6" target="1.6" debug="true" />
+		</groovyc>
+
+	</target>
+
+	<target name="jar" depends="build">
+		<jar jarfile="${build.dir}/ghive.jar">
+            <fileset dir="${build.classes}" />
+            <fileset dir="${build.doc}" />
+		</jar>
+	</target>
+
+	<target name="test" depends="build, test.batch">
+	</target>
+
+	<target name="test.batch">
+		<mkdir dir="${reports.test}" />
+		<junit printsummary="withOutAndErr">
+			<formatter type="plain" />
+			<classpath refid="project.class.path" />
+			<batchtest fork="yes" haltonfailure="yes" todir="${reports.test}">
+				<fileset dir="${src.test}">
+					<include name="**/*Test.java" />
+					<exclude name="**/AllTests.java" />
+				</fileset>
+			</batchtest>
+		</junit>
+	</target>
+
+</project>
