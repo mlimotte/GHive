@@ -67,13 +67,13 @@
 	<target name="doc">
         <mkdir dir="${build.doc}" />
 
-        <javadoc
+        <!--javadoc
                classpathref     = "project.class.path"
                destdir          = "${build.doc}"
                packagenames     = "ghive.*"
                sourcepath       = "${src.dir}"
                windowTitle      = "GHive">
-        </javadoc>
+        </javadoc-->
     </target>
 
     <target name="build">
@@ -98,8 +98,8 @@
 
 	</target>
 
-	<target name="jar" depends="build">
-		<jar jarfile="${build.dir}/ghive.jar">
+	<target name="jar" depends="build, doc">
+		<jar jarfile="ghive.jar">
             <fileset dir="${build.classes}" />
             <fileset dir="${build.doc}" />
 		</jar>
