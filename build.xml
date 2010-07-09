@@ -13,6 +13,7 @@
 
     <property name="src.dir" location="${basedir}/src" />
     <property name="src.test" location="${basedir}/test" />
+    <property name="resources" location="${basedir}/resources" />
 
 	<property name="reports.test" location="${basedir}/build/reports" />
 	<property name="build.dir" location="${basedir}/build/" />
@@ -22,34 +23,25 @@
 
 	<!-- Libraries -->
 
-	<property name="junit.lib" value="/lib/junit.jar" />
-
-
-    <!-- at runtime, remmeber to include Hadoop and Hive libs and conf directories.
-
-    For example:
-
-        <property name="hadoop.conf" value="/usr/local/hadoop/conf" />
-        <property name="hadoop.lib.dir" value="/usr/local/hadoop/lib" />
-        <property name="hadoop.core" value="/usr/local/hadoop/hadoop-0.20.2+228-core.jar" />
-        <property name="hive.conf" value="/usr/local/hive/conf" />
-        <property name="hive.lib.dir" value="/usr/local/hive/lib" />
-
-		<pathelement location="${hadoop.core}" />
-		<pathelement location="${hadoop.conf}" />
-		<fileset dir="${hadoop.lib.dir}" includes="*.jar" />
-        <pathelement location="${hive.conf}" />
-        <fileset dir="${hive.lib.dir}" includes="*.jar" />
-    -->
-
+	<property name="junit.lib" value="${basedir}/lib/junit-4.8.1.jar" />
+    <property name="hadoop.conf" value="/usr/local/hadoop/conf" />
+    <property name="hadoop.lib.dir" value="/usr/local/hadoop/lib" />
+    <property name="hadoop.core" value="/usr/local/hadoop/hadoop-0.20.2+228-core.jar" />
+    <property name="hive.conf" value="/usr/local/hive/conf" />
+    <property name="hive.lib.dir" value="/usr/local/hive/lib" />
 
 	<!-- classpath -->
 
 	<path id="project.class.path">
-		<pathelement location="${build.classes}" />
         <pathelement location="/usr/local/groovy/embeddable/groovy-all-1.7.2.jar" />
+        <pathelement location="${junit.lib}" />
+		<pathelement location="${build.classes}" />
 		<pathelement location="${build.test}" />
-		<pathelement location="${junit.lib}" />
+        <pathelement location="${hadoop.core}"/>
+        <pathelement location="${hadoop.conf}"/>
+        <fileset dir="${hadoop.lib.dir}" includes="*.jar"/>
+        <pathelement location="${hive.conf}"/>
+        <fileset dir="${hive.lib.dir}" includes="*.jar"/>
 	</path>
 
 	<!-- task defs -->
@@ -61,7 +53,8 @@
 
 	<target name="clean">
 		<echo message="cleaning..." />
-		<delete dir="${build.dir}" />
+        <delete dir="${build.dir}" />
+        <delete file="ghive.jar" />
 	</target>
 
 	<target name="doc">
@@ -96,6 +89,10 @@
 			<javac source="1.6" target="1.6" debug="true" />
 		</groovyc>
 
+        <copy todir="${build.classes}">
+          <fileset dir="${resources}"/>
+        </copy>
+        
 	</target>
 
 	<target name="jar" depends="build, doc">
@@ -114,9 +111,9 @@
 			<formatter type="plain" />
 			<classpath refid="project.class.path" />
 			<batchtest fork="yes" haltonfailure="yes" todir="${reports.test}">
-				<fileset dir="${src.test}">
-					<include name="**/*Test.java" />
-					<exclude name="**/AllTests.java" />
+				<fileset dir="${build.test}">
+					<include name="**/Test*.class" />
+					<exclude name="**/*$*.class" />
 				</fileset>
 			</batchtest>
 		</junit>

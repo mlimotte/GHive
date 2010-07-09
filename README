@@ -5,8 +5,8 @@ Marc Limotte
 GHive is a quick groovy wrapper around Hive.  It provides a few basic functionalities.  It can
 be particularly useful if you're using Amazon EMR and want a way to run your hive scripts locally.
 
-One of the primary use cases I wanted to support was the ability to unit test Amazon EMR hive scripts.  I have some
-extensions to this code to accomplish this.  I will be committing those here, soon.
+One of the primary use cases I wanted to support was the ability to unit test Amazon EMR hive scripts.  For an
+example of how to do this, see below "test/ghive/TestSimple.groovy"
 
 
 FEATURES
@@ -45,7 +45,7 @@ BUILDING
 
     ant jar
 
-4. The resulting jar will be at build/ghive.jar
+4. The resulting jar will be at ./ghive.jar
 
 
 
@@ -106,6 +106,38 @@ And groovy code:
        println "$username is a member of $group"
      }
    }
+
+
+UNIT TESTING
+------------
+
+See "test/ghive/TestSimple.groovy".  The main testcase method from that exmaple is here:
+
+	@Test
+	public void testSimple() {
+
+        // the q path is relative to the classpath
+        def q = "simple.hive"
+
+        def queries = ghive.parseScript (q, [ STORAGE_TYPE: 'TEXTFILE' ])
+
+        ghive.execute(queries[0])   // create table
+        ghive.execute(queries[1])   // load data
+        def result = ghive.executeAndGetList(
+            "select id, value, amt from simple",
+            [ 'id', 'value', 'amt' ])
+
+        assertEquals(3,result.size())
+
+        def expected = [
+            [ id:'1', value:'line1', amt:'0.2' ],
+            [ id:'100', value:'line2', amt:'0.3' ],
+            [ id:'50', value:'line3', amt:'0.4' ]
+        ]
+        assertEquals(expected,result)
+
+	}
+
 
 
 THOUGHTS ON THE DSL

@@ -1,0 +1,11 @@
+
+CREATE TABLE simple (
+ id int,
+ value string,
+ amt double
+)
+ROW FORMAT DELIMITED
+STORED AS ${STORAGE_TYPE};
+
+-- the data path is relative CWD (current working directory when you star the test)
+LOAD DATA LOCAL INPATH 'resources/threelines-id-val.txt' OVERWRITE INTO TABLE simple;

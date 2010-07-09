@@ -1,6 +1,5 @@
 package ghive;
 
-
 import groovy.sql.Sql
 import java.sql.ResultSet
 import java.sql.Statement
@@ -57,9 +56,24 @@ public class GHive {
 	}
 
   /**
-   * Execute the given script through Hive.
-   * @param hiveSql A valid Hive statement, with no ";" at the end.
+   * execute the query and get all the results
+   * @param hiveSql - Should a query that produces a result set (i.e. a select stmt)
+   * @param colNames - HiveResultSet does not return metadata, so supply a list of names in order of the columns in the select
+   * @return Each map in the list is one row from the result set, and contains each column name mapped to it's value
    */
+  public List<Map<String,String>> executeAndGetList(String hiveSql, List<String> colNames) {
+    def result = []
+    eachRow(hiveSql) { rs ->
+      def row = [:]
+      def i=1
+      colNames.each { col ->
+        row[col] = rs.getString(i++)
+      }
+      result << row
+    }
+    return result
+  }
+
 	public void execute(String hiveSql) {
 		execute(hiveSql, null)
 	}
